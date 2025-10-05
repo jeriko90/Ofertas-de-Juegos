@@ -14,7 +14,7 @@
       "typeVersion": 1.2,
       "position": [
         -736,
-        -176
+        -80
       ],
       "webhookId": "1afe6584-faf6-41e1-9d5a-24dc6c561c8f",
       "credentials": {
@@ -185,63 +185,12 @@
       "typeVersion": 3.2,
       "position": [
         -512,
-        -176
+        -80
       ],
       "id": "9c11b7bb-d25f-42f9-b7ea-8016d7cfbf95",
       "name": "Switch",
-      "alwaysOutputData": false
-    },
-    {
-      "parameters": {
-        "url": "AQUI VAN LOS NUEVOS JUEGOS",
-        "options": {}
-      },
-      "id": "91e3d039-f7e9-4c19-9a23-18e8dd72c9df",
-      "name": "Epic Games Gratis1",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [
-        -288,
-        -368
-      ]
-    },
-    {
-      "parameters": {
-        "functionCode": "AQUI DEBERIA SER UN JS QUE FILTRE LOS PRECIOS"
-      },
-      "id": "3b4dc64c-ce61-4bfe-9803-3f460d023d9d",
-      "name": "Format Epic1",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        -64,
-        -368
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "sendPhoto",
-        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
-        "file": "={{ $json.imagen }}",
-        "additionalFields": {
-          "caption": "=🎮 Titulo: {{ $json.titulo }}\n💰 Precio: {{ $json.precio }}\n💸 Descuento: {{ $json.descuento }}\n💰 Ahorro: {{ $json.ahorro }}\n🔗 [Ver en Steam]({{ $json.url }})\n"
-        }
-      },
-      "type": "n8n-nodes-base.telegram",
-      "typeVersion": 1.2,
-      "position": [
-        160,
-        -368
-      ],
-      "id": "e2479543-904b-4821-8cc4-aca97335e58b",
-      "name": "Send a photo message2",
-      "webhookId": "b65d694c-f9c8-45e1-9d19-847e5d8222b4",
-      "credentials": {
-        "telegramApi": {
-          "id": "2eb4BvGdp28UT91v",
-          "name": "HauseSongs"
-        }
-      }
+      "alwaysOutputData": false,
+      "executeOnce": true
     }
   ],
   "pinData": {},
@@ -318,11 +267,6 @@
             "node": "Epic Games Gratis",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Epic Games Gratis1",
-            "type": "main",
-            "index": 0
           }
         ],
         [
@@ -334,35 +278,13 @@
         ],
         []
       ]
-    },
-    "Epic Games Gratis1": {
-      "main": [
-        [
-          {
-            "node": "Format Epic1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Format Epic1": {
-      "main": [
-        [
-          {
-            "node": "Send a photo message2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "4babe879-9331-4faf-abdd-24d554d3567b",
+  "versionId": "7272aa99-ed83-4d08-9f81-ed78bc773b5b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "01a4c05f1dbf672f8e2648f4a6a404182228a9c12341ec55c75aa371bb48b407"
