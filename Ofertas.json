@@ -1,0 +1,372 @@
+{
+  "name": "Ofertas de Juegos",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "27fc916b-986f-4632-8fdb-b4face7c26c1",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -736,
+        -176
+      ],
+      "webhookId": "1afe6584-faf6-41e1-9d5a-24dc6c561c8f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2eb4BvGdp28UT91v",
+          "name": "HauseSongs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=es-ES&country=ES&allowCountries=ES",
+        "options": {}
+      },
+      "id": "dfa90f13-a54c-4928-995d-88260dbd76ab",
+      "name": "Epic Games Gratis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -288,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Tipo de cambio USD a ARS\nconst usdToArs = 1420; // ajustalo al valor real\n\nreturn $json.data.Catalog.searchStore.elements.map(e => {\n    // Precios en número\n    let precioOriginalUSD = parseFloat(e.price.totalPrice.fmtPrice.originalPrice) || 0;\n    let precioFinalUSD = parseFloat(e.price.totalPrice.fmtPrice.discountPrice) || precioOriginalUSD;\n\n    // Convertir a ARS\n    let precioOriginalARS = +(precioOriginalUSD * usdToArs).toFixed(2);\n    let precioFinalARS = +(precioFinalUSD * usdToArs).toFixed(2);\n\n    // Determinar si es gratis\n    let esGratis = precioFinalUSD === 0 ? \"Sí\" : \"No\";\n\n    // Calcular porcentaje de descuento y ahorro\n    let descuento = precioOriginalUSD > 0 ? Math.round((1 - precioFinalUSD / precioOriginalUSD) * 100) : 0;\n    let ahorroUSD = (precioOriginalUSD - precioFinalUSD).toFixed(2);\n    let ahorroARS = ((precioOriginalUSD - precioFinalUSD) * usdToArs).toFixed(2);\n\n    return {\n        json: {\n            titulo: e.title,\n            precio: `USD:${precioFinalUSD.toFixed(2)} / ARS:${precioFinalARS}`,\n            gratis: esGratis,\n            descuento: `${descuento}%`,\n            ahorro: `USD:${ahorroUSD} / ARS:${ahorroARS}`,\n            url: `https://store.epicgames.com/p/${e.productSlug}`,\n            imagen: e.keyImages.find(img => img.type === \"OfferImageWide\")?.url\n        }\n    };\n});\n"
+      },
+      "id": "87fd16f3-a5a3-435b-8e1b-1c2cead084ea",
+      "name": "Format Epic",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://store.steampowered.com/api/featuredcategories/?cc=ar&l=spanish",
+        "options": {}
+      },
+      "id": "1176284e-1b2a-4536-8b3c-472e70df15d9",
+      "name": "Steam Ofertas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -288,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const specials = $json.specials?.items || [];\n\n// Tipo de cambio USD -> ARS\nconst usdToArs = 1420; // Ajustar al valor actual\n\nreturn specials.map(s => {\n    // Precios en centavos de USD, usando paréntesis para evitar error de mezcla\n    let originalCents = (s.original_price ?? s.final_price) || 0;\n    let finalCents = (s.final_price ?? s.original_price) || 0;\n\n    // Convertir a USD\n    let originalUSD = originalCents / 100;\n    let finalUSD = finalCents / 100;\n\n    // Convertir a ARS\n    let precioOriginalARS = (originalUSD * usdToArs).toFixed(2);\n    let precioFinalARS = (finalUSD * usdToArs).toFixed(2);\n\n    // Determinar si es gratis\n    let esGratis = finalCents === 0 ? \"Sí\" : \"No\";\n\n    // Calcular porcentaje de descuento y ahorro\n    let descuento = s.discount_percent ?? (originalUSD > 0 ? Math.round((1 - finalUSD / originalUSD) * 100) : 0);\n    let ahorroUSD = (originalUSD - finalUSD).toFixed(2);\n    let ahorroARS = ((originalUSD - finalUSD) * usdToArs).toFixed(2);\n\n    return {\n        json: {\n            titulo: s.name,\n            precio: `USD: ${finalUSD.toFixed(2)} / ARS: ${precioFinalARS}` +\n                    (finalUSD !== originalUSD ? ` (Original: USD: ${originalUSD.toFixed(2)} / ARS: ${precioOriginalARS})` : \"\"),\n            gratis: esGratis,\n            descuento: `${descuento}%`,\n            ahorro: `USD: ${ahorroUSD} / ARS: ${ahorroARS}`,\n            url: `https://store.steampowered.com/app/${s.id}`,\n            imagen: s.large_capsule_image\n        }\n    };\n});\n"
+      },
+      "id": "a9c5e305-5d6e-4af1-aa94-c10479b0851f",
+      "name": "Format Steam",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "file": "={{ $json.imagen }}",
+        "additionalFields": {
+          "caption": "=🎮 Titulo: {{ $json.titulo }}\n💰 Precio: {{ $json.precio }}\n💸 Descuento: {{ $json.descuento }}\n💰 Ahorro: {{ $json.ahorro }}\n🔗 [Ver en Steam]({{ $json.url }})"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        16
+      ],
+      "id": "36c4b3c7-f27c-4039-8d0f-ec713b4e4be2",
+      "name": "Send a photo message",
+      "webhookId": "b65d694c-f9c8-45e1-9d19-847e5d8222b4",
+      "credentials": {
+        "telegramApi": {
+          "id": "2eb4BvGdp28UT91v",
+          "name": "HauseSongs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "file": "={{ $json.imagen }}",
+        "additionalFields": {
+          "caption": "=🎮 Titulo: {{ $json.titulo }}\n💰 Precio: {{ $json.precio }}\n💸 Descuento: {{ $json.descuento }}\n💰 Ahorro: {{ $json.ahorro }}\n🔗 [Ver en Steam]({{ $json.url }})\n"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        -176
+      ],
+      "id": "cd0ba209-5de7-4dd9-9038-6594c6e558da",
+      "name": "Send a photo message1",
+      "webhookId": "b65d694c-f9c8-45e1-9d19-847e5d8222b4",
+      "credentials": {
+        "telegramApi": {
+          "id": "2eb4BvGdp28UT91v",
+          "name": "HauseSongs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text.toUpperCase() }}",
+                    "rightValue": "EPIC",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "8315fd45-9ada-473d-b4c0-1e00e812e15c"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "af8cab6d-ce95-4d49-af2b-15d8adcfcc2c",
+                    "leftValue": "={{ $json.message.text.toUpperCase() }}",
+                    "rightValue": "STEAM",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -512,
+        -176
+      ],
+      "id": "9c11b7bb-d25f-42f9-b7ea-8016d7cfbf95",
+      "name": "Switch",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "AQUI VAN LOS NUEVOS JUEGOS",
+        "options": {}
+      },
+      "id": "91e3d039-f7e9-4c19-9a23-18e8dd72c9df",
+      "name": "Epic Games Gratis1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -288,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "AQUI DEBERIA SER UN JS QUE FILTRE LOS PRECIOS"
+      },
+      "id": "3b4dc64c-ce61-4bfe-9803-3f460d023d9d",
+      "name": "Format Epic1",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "file": "={{ $json.imagen }}",
+        "additionalFields": {
+          "caption": "=🎮 Titulo: {{ $json.titulo }}\n💰 Precio: {{ $json.precio }}\n💸 Descuento: {{ $json.descuento }}\n💰 Ahorro: {{ $json.ahorro }}\n🔗 [Ver en Steam]({{ $json.url }})\n"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        -368
+      ],
+      "id": "e2479543-904b-4821-8cc4-aca97335e58b",
+      "name": "Send a photo message2",
+      "webhookId": "b65d694c-f9c8-45e1-9d19-847e5d8222b4",
+      "credentials": {
+        "telegramApi": {
+          "id": "2eb4BvGdp28UT91v",
+          "name": "HauseSongs"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Epic Games Gratis": {
+      "main": [
+        [
+          {
+            "node": "Format Epic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Steam Ofertas": {
+      "main": [
+        [
+          {
+            "node": "Format Steam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Epic": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Steam": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        []
+      ]
+    },
+    "Send a photo message1": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Epic Games Gratis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Epic Games Gratis1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Steam Ofertas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Epic Games Gratis1": {
+      "main": [
+        [
+          {
+            "node": "Format Epic1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Epic1": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4babe879-9331-4faf-abdd-24d554d3567b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "01a4c05f1dbf672f8e2648f4a6a404182228a9c12341ec55c75aa371bb48b407"
+  },
+  "id": "eChR97Z71EIjx6ps",
+  "tags": []
+}
